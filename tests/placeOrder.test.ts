@@ -1,5 +1,5 @@
-import { placeOrder } from "../application/placeOrder";
-import { inventoryRepo } from "../../inventory/infrastructure/repo";
+import { placeOrder } from "../src/orders/application/placeOrder";
+import { inventoryRepo } from "../src/inventory/infrastructure/repo";
 
 test("should decrement inventory when order placed", async () => {
   const initialStock = await inventoryRepo.getStock("item-123");
