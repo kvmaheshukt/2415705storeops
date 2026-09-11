@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <meta charset="UTF-8">
+  <title>StoreOps Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #2c3e50; }
+    button { margin: 5px; padding: 10px; }
+    pre { background: #f4f4f4; padding: 10px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>StoreOps Harness Dashboard</h1>
+
+  <button onclick="fetchBulkUpdate()">Test Bulk Update</button>
+  <button onclick="fetchSlaCheck()">Run SLA Check</button>
+  <button onclick="fetchRegionReport()">View Region Report</button>
+
+  <h2>Response</h2>
+  <pre id="output">Click a button to test...</pre>
+
+  <script>
+   let completionChart, overdueChart;
+
+    async function fetchBulkUpdate() {
+      const res = await fetch('/api/activities/bulk-status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ['a1','a2'], status: 'DONE' })
+      });
+      document.getElementById('output').textContent = JSON.stringify(await res.json(), null, 2);
+    }
+
+    async function fetchSlaCheck() {
+      const res = await fetch('/api/alerts/sla-check');
+      document.getElementById('output').textContent = JSON.stringify(await res.json(), null, 2);
+    }
+
+    async function fetchRegionReport() {
+  const res = await fetch('/api/reports/region/r1');
+  const data = await res.json();
+  document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+
+  // Completion Rate Chart
+  const completionRate = data.completionRate * 100;
+  if (completionChart) completionChart.destroy();
+  completionChart = new Chart(document.getElementById('completionChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Completed', 'Remaining'],
+      datasets: [{
+        data: [completionRate, 100 - completionRate],
+        backgroundColor: ['#2ecc71', '#e74c3c']
+      }]
+    },
+    options: {
+      plugins: { title: { display: true, text: 'Completion Rate (%)' } }
+    }
+  });
+
+  // Overdue Tasks Chart
+  const categories = Object.keys(data.overdueByCategory);
+  const counts = Object.values(data.overdueByCategory);
+  if (overdueChart) overdueChart.destroy();
+  overdueChart = new Chart(document.getElementById('overdueChart'), {
+    type: 'bar',
+    data: {
+      labels: categories,
+      datasets: [{
+        label: 'Overdue Tasks',
+        data: counts,
+        backgroundColor: '#3498db'
+      }]
+    },
+    options: {
+      plugins: { title: { display: true, text: 'Overdue Tasks by Category' } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
+  </script>
+<h2>Charts</h2>
+<div style="width: 400px;">
+  <canvas id="completionChart"></canvas>
+</div>
+<div style="width: 400px;">
+  <canvas id="overdueChart"></canvas>
+</div>
+
+</body>
+</html>
